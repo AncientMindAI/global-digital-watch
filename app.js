@@ -463,6 +463,7 @@ formatToggle.addEventListener("click", () => {
 baseZoneSelect.addEventListener("change", convertTime);
 targetZoneSelect.addEventListener("change", convertTime);
 baseTimeInput.addEventListener("change", convertTime);
+baseTimeInput.addEventListener("input", convertTime);
 citySearch.addEventListener("input", refreshCitySelect);
 addCityBtn.addEventListener("click", addSelectedCity);
 resetDefaultsBtn.addEventListener("click", resetDefaults);
