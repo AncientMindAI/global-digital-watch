@@ -150,25 +150,6 @@ h1 {
   box-shadow: var(--shadow);
 }
 
-.extra-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.extra-card {
-  background: rgba(12, 20, 40, 0.7);
-  border: 1px solid var(--stroke);
-  border-radius: 14px;
-  padding: 12px;
-  display: grid;
-  gap: 4px;
-}
-
-.extra-card .zone {
-  color: var(--muted);
-  font-size: 12px;
-}
 
 .settings {
   border: 1px solid var(--stroke);

@@ -70,9 +70,6 @@ const targetTimeInput = document.getElementById("targetTime");
 const convertResult = document.getElementById("convertResult");
 const convertDate = document.getElementById("convertDate");
 const convertMeta = document.getElementById("convertMeta");
-const extraZoneSearch = document.getElementById("extraZoneSearch");
-const extraZonesSelect = document.getElementById("extraZones");
-const extraResults = document.getElementById("extraResults");
 const citySearch = document.getElementById("citySearch");
 const citySelect = document.getElementById("citySelect");
 const addCityBtn = document.getElementById("addCity");
@@ -276,7 +273,6 @@ function populateConverter() {
   const uniqueZones = Array.from(new Set(zones));
   baseZoneSelect.innerHTML = "";
   targetZoneSelect.innerHTML = "";
-  extraZonesSelect.innerHTML = "";
   const now = new Date();
 
   uniqueZones.forEach((zone) => {
@@ -291,15 +287,6 @@ function populateConverter() {
     optionB.textContent = getZoneLabel(now, zone);
     optionB.dataset.abbr = formatZone(now, zone);
     targetZoneSelect.appendChild(optionB);
-  });
-
-  uniqueZones.forEach((zone) => {
-    const option = document.createElement("option");
-    option.value = zone;
-    option.textContent = getZoneLabel(now, zone);
-    option.dataset.abbr = formatZone(now, zone);
-    option.dataset.label = option.textContent;
-    extraZonesSelect.appendChild(option);
   });
 
   const detectedZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -341,39 +328,6 @@ function convertBaseToTarget(baseDate, baseZone, targetZone) {
   return { targetDate, baseOffset, targetOffset };
 }
 
-function refreshExtraZonesList() {
-  const searchValue = extraZoneSearch.value.trim().toLowerCase();
-  const selected = new Set(Array.from(extraZonesSelect.selectedOptions).map((opt) => opt.value));
-  Array.from(extraZonesSelect.options).forEach((option) => {
-    const abbr = option.dataset.abbr || "";
-    const label = option.dataset.label || option.value;
-    const match = label.toLowerCase().includes(searchValue) || abbr.toLowerCase().includes(searchValue);
-    option.hidden = !match;
-    option.selected = selected.has(option.value);
-  });
-}
-
-function renderExtraResults(baseDate, baseZone) {
-  if (!extraResults) return;
-  const selectedZones = Array.from(extraZonesSelect.selectedOptions).map((opt) => opt.value);
-  extraResults.innerHTML = "";
-  selectedZones.forEach((zone) => {
-    const { targetDate, baseOffset, targetOffset } = convertBaseToTarget(baseDate, baseZone, zone);
-    const shortZone = formatZone(targetDate, zone);
-    const offsetLabel = formatOffset(targetDate, zone).replace("GMT", "UTC");
-    const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
-    const card = document.createElement("div");
-    card.className = "extra-card";
-    card.innerHTML = `
-      <div class="time">${formatTime(targetDate, zone, state.use12Hour)}</div>
-      <div class="date">${formatDate(targetDate, zone)}</div>
-      <div class="zone">Target: ${shortZone} (${offsetLabel})</div>
-      <div class="zone">${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}</div>
-    `;
-    extraResults.appendChild(card);
-  });
-}
-
 function convertFromBase() {
   if (!baseTimeInput.value || isConverting) return;
   isConverting = true;
@@ -393,7 +347,6 @@ function convertFromBase() {
     convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
   targetTimeInput.value = toLocalInputValue(targetDate);
-  renderExtraResults(baseDate, baseZone);
   isConverting = false;
 }
 
@@ -419,7 +372,6 @@ function convertFromTarget() {
     const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
     convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
-  renderExtraResults(baseDate, baseZone);
   isConverting = false;
 }
 
@@ -562,8 +514,6 @@ baseTimeInput.addEventListener("change", convertFromBase);
 baseTimeInput.addEventListener("input", convertFromBase);
 targetTimeInput.addEventListener("change", convertFromTarget);
 targetTimeInput.addEventListener("input", convertFromTarget);
-extraZoneSearch.addEventListener("input", refreshExtraZonesList);
-extraZonesSelect.addEventListener("change", convertFromBase);
 citySearch.addEventListener("input", refreshCitySelect);
 addCityBtn.addEventListener("click", addSelectedCity);
 resetDefaultsBtn.addEventListener("click", resetDefaults);
