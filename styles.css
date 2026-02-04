@@ -24,9 +24,9 @@ body {
 }
 
 .app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 60px;
+  width: 100%;
+  margin: 0;
+  padding: 32px 32px 60px;
   display: flex;
   flex-direction: column;
   gap: 32px;
