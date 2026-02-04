@@ -277,23 +277,28 @@ function populateConverter() {
   baseZoneSelect.innerHTML = "";
   targetZoneSelect.innerHTML = "";
   extraZonesSelect.innerHTML = "";
+  const now = new Date();
 
   uniqueZones.forEach((zone) => {
     const optionA = document.createElement("option");
     optionA.value = zone;
-    optionA.textContent = zone;
+    optionA.textContent = getZoneLabel(now, zone);
+    optionA.dataset.abbr = formatZone(now, zone);
     baseZoneSelect.appendChild(optionA);
 
     const optionB = document.createElement("option");
     optionB.value = zone;
-    optionB.textContent = zone;
+    optionB.textContent = getZoneLabel(now, zone);
+    optionB.dataset.abbr = formatZone(now, zone);
     targetZoneSelect.appendChild(optionB);
   });
 
   uniqueZones.forEach((zone) => {
     const option = document.createElement("option");
     option.value = zone;
-    option.textContent = zone;
+    option.textContent = getZoneLabel(now, zone);
+    option.dataset.abbr = formatZone(now, zone);
+    option.dataset.label = option.textContent;
     extraZonesSelect.appendChild(option);
   });
 
@@ -312,7 +317,6 @@ function populateConverter() {
 
   baseZoneSelect.value = detectedZone || "America/Toronto";
   targetZoneSelect.value = "UTC";
-  const now = new Date();
   const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   baseTimeInput.value = localISO;
   targetTimeInput.value = localISO;
@@ -322,6 +326,11 @@ let isConverting = false;
 
 function toLocalInputValue(date) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function getZoneLabel(date, timeZone) {
+  const abbr = formatZone(date, timeZone);
+  return abbr ? `${abbr} — ${timeZone}` : timeZone;
 }
 
 function convertBaseToTarget(baseDate, baseZone, targetZone) {
@@ -336,7 +345,9 @@ function refreshExtraZonesList() {
   const searchValue = extraZoneSearch.value.trim().toLowerCase();
   const selected = new Set(Array.from(extraZonesSelect.selectedOptions).map((opt) => opt.value));
   Array.from(extraZonesSelect.options).forEach((option) => {
-    const match = option.value.toLowerCase().includes(searchValue);
+    const abbr = option.dataset.abbr || "";
+    const label = option.dataset.label || option.value;
+    const match = label.toLowerCase().includes(searchValue) || abbr.toLowerCase().includes(searchValue);
     option.hidden = !match;
     option.selected = selected.has(option.value);
   });
