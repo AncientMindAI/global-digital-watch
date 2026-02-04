@@ -66,6 +66,7 @@ const formatToggle = document.getElementById("formatToggle");
 const baseZoneSelect = document.getElementById("baseZone");
 const targetZoneSelect = document.getElementById("targetZone");
 const baseTimeInput = document.getElementById("baseTime");
+const targetTimeInput = document.getElementById("targetTime");
 const convertResult = document.getElementById("convertResult");
 const convertDate = document.getElementById("convertDate");
 const convertMeta = document.getElementById("convertMeta");
@@ -303,10 +304,18 @@ function populateConverter() {
   const now = new Date();
   const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   baseTimeInput.value = localISO;
+  targetTimeInput.value = localISO;
 }
 
-function convertTime() {
-  if (!baseTimeInput.value) return;
+let isConverting = false;
+
+function toLocalInputValue(date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function convertFromBase() {
+  if (!baseTimeInput.value || isConverting) return;
+  isConverting = true;
   const baseZone = baseZoneSelect.value;
   const targetZone = targetZoneSelect.value;
   const baseDate = new Date(baseTimeInput.value);
@@ -325,6 +334,33 @@ function convertTime() {
     const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
     convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
+  targetTimeInput.value = toLocalInputValue(targetDate);
+  isConverting = false;
+}
+
+function convertFromTarget() {
+  if (!targetTimeInput.value || isConverting) return;
+  isConverting = true;
+  const baseZone = baseZoneSelect.value;
+  const targetZone = targetZoneSelect.value;
+  const targetDate = new Date(targetTimeInput.value);
+  if (Number.isNaN(targetDate.getTime())) return;
+
+  const targetOffset = getOffsetMinutes(targetDate, targetZone);
+  const baseOffset = getOffsetMinutes(targetDate, baseZone);
+  const utcMs = targetDate.getTime() - targetOffset * 60000;
+  const baseDate = new Date(utcMs + baseOffset * 60000);
+
+  baseTimeInput.value = toLocalInputValue(baseDate);
+  convertResult.textContent = formatTime(targetDate, targetZone, state.use12Hour);
+  convertDate.textContent = formatDate(targetDate, targetZone);
+  if (convertMeta) {
+    const targetShort = formatZone(targetDate, targetZone);
+    const targetOffsetLabel = formatOffset(targetDate, targetZone).replace("GMT", "UTC");
+    const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
+    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
+  }
+  isConverting = false;
 }
 
 function renderActiveCities() {
@@ -457,13 +493,15 @@ formatToggle.addEventListener("click", () => {
   state.use12Hour = !state.use12Hour;
   formatToggle.setAttribute("aria-pressed", state.use12Hour ? "true" : "false");
   updateClocks();
-  convertTime();
+  convertFromBase();
 });
 
-baseZoneSelect.addEventListener("change", convertTime);
-targetZoneSelect.addEventListener("change", convertTime);
-baseTimeInput.addEventListener("change", convertTime);
-baseTimeInput.addEventListener("input", convertTime);
+baseZoneSelect.addEventListener("change", convertFromBase);
+targetZoneSelect.addEventListener("change", convertFromBase);
+baseTimeInput.addEventListener("change", convertFromBase);
+baseTimeInput.addEventListener("input", convertFromBase);
+targetTimeInput.addEventListener("change", convertFromTarget);
+targetTimeInput.addEventListener("input", convertFromTarget);
 citySearch.addEventListener("input", refreshCitySelect);
 addCityBtn.addEventListener("click", addSelectedCity);
 resetDefaultsBtn.addEventListener("click", resetDefaults);
@@ -479,7 +517,7 @@ renderActiveCities();
 refreshCitySelect();
 populateConverter();
 updateClocks();
-convertTime();
+convertFromBase();
 setInterval(updateClocks, 1000);
 
 if ("serviceWorker" in navigator) {
