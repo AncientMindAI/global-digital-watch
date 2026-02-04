@@ -68,6 +68,7 @@ const targetZoneSelect = document.getElementById("targetZone");
 const baseTimeInput = document.getElementById("baseTime");
 const convertResult = document.getElementById("convertResult");
 const convertDate = document.getElementById("convertDate");
+const convertMeta = document.getElementById("convertMeta");
 const citySearch = document.getElementById("citySearch");
 const citySelect = document.getElementById("citySelect");
 const addCityBtn = document.getElementById("addCity");
@@ -141,6 +142,19 @@ function offsetDiffLabel(baseMinutes, targetMinutes) {
   if (hours) parts.push(`${hours}h`);
   if (minutes) parts.push(`${minutes}m`);
   return `${parts.join(" ")} ${sign} Toronto`;
+}
+
+function offsetDiffLabelWithBase(baseMinutes, targetMinutes, baseLabel) {
+  const diff = targetMinutes - baseMinutes;
+  if (diff === 0) return `Same as ${baseLabel}`;
+  const sign = diff > 0 ? "ahead" : "behind";
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 60);
+  const minutes = abs % 60;
+  const parts = [];
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+  return `${parts.join(" ")} ${sign} ${baseLabel}`;
 }
 
 function getLocalHour(date, timeZone) {
@@ -305,6 +319,12 @@ function convertTime() {
 
   convertResult.textContent = formatTime(targetDate, targetZone, state.use12Hour);
   convertDate.textContent = formatDate(targetDate, targetZone);
+  if (convertMeta) {
+    const targetShort = formatZone(targetDate, targetZone);
+    const targetOffsetLabel = formatOffset(targetDate, targetZone).replace("GMT", "UTC");
+    const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
+    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
+  }
 }
 
 function renderActiveCities() {
