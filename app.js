@@ -70,6 +70,9 @@ const targetTimeInput = document.getElementById("targetTime");
 const convertResult = document.getElementById("convertResult");
 const convertDate = document.getElementById("convertDate");
 const convertMeta = document.getElementById("convertMeta");
+const extraZoneSearch = document.getElementById("extraZoneSearch");
+const extraZonesSelect = document.getElementById("extraZones");
+const extraResults = document.getElementById("extraResults");
 const citySearch = document.getElementById("citySearch");
 const citySelect = document.getElementById("citySelect");
 const addCityBtn = document.getElementById("addCity");
@@ -273,6 +276,7 @@ function populateConverter() {
   const uniqueZones = Array.from(new Set(zones));
   baseZoneSelect.innerHTML = "";
   targetZoneSelect.innerHTML = "";
+  extraZonesSelect.innerHTML = "";
 
   uniqueZones.forEach((zone) => {
     const optionA = document.createElement("option");
@@ -284,6 +288,13 @@ function populateConverter() {
     optionB.value = zone;
     optionB.textContent = zone;
     targetZoneSelect.appendChild(optionB);
+  });
+
+  uniqueZones.forEach((zone) => {
+    const option = document.createElement("option");
+    option.value = zone;
+    option.textContent = zone;
+    extraZonesSelect.appendChild(option);
   });
 
   const detectedZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -313,6 +324,45 @@ function toLocalInputValue(date) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
+function convertBaseToTarget(baseDate, baseZone, targetZone) {
+  const baseOffset = getOffsetMinutes(baseDate, baseZone);
+  const targetOffset = getOffsetMinutes(baseDate, targetZone);
+  const utcMs = baseDate.getTime() - baseOffset * 60000;
+  const targetDate = new Date(utcMs + targetOffset * 60000);
+  return { targetDate, baseOffset, targetOffset };
+}
+
+function refreshExtraZonesList() {
+  const searchValue = extraZoneSearch.value.trim().toLowerCase();
+  const selected = new Set(Array.from(extraZonesSelect.selectedOptions).map((opt) => opt.value));
+  Array.from(extraZonesSelect.options).forEach((option) => {
+    const match = option.value.toLowerCase().includes(searchValue);
+    option.hidden = !match;
+    option.selected = selected.has(option.value);
+  });
+}
+
+function renderExtraResults(baseDate, baseZone) {
+  if (!extraResults) return;
+  const selectedZones = Array.from(extraZonesSelect.selectedOptions).map((opt) => opt.value);
+  extraResults.innerHTML = "";
+  selectedZones.forEach((zone) => {
+    const { targetDate, baseOffset, targetOffset } = convertBaseToTarget(baseDate, baseZone, zone);
+    const shortZone = formatZone(targetDate, zone);
+    const offsetLabel = formatOffset(targetDate, zone).replace("GMT", "UTC");
+    const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
+    const card = document.createElement("div");
+    card.className = "extra-card";
+    card.innerHTML = `
+      <div class="time">${formatTime(targetDate, zone, state.use12Hour)}</div>
+      <div class="date">${formatDate(targetDate, zone)}</div>
+      <div class="zone">Target: ${shortZone} (${offsetLabel})</div>
+      <div class="zone">${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}</div>
+    `;
+    extraResults.appendChild(card);
+  });
+}
+
 function convertFromBase() {
   if (!baseTimeInput.value || isConverting) return;
   isConverting = true;
@@ -321,10 +371,7 @@ function convertFromBase() {
   const baseDate = new Date(baseTimeInput.value);
   if (Number.isNaN(baseDate.getTime())) return;
 
-  const baseOffset = getOffsetMinutes(baseDate, baseZone);
-  const targetOffset = getOffsetMinutes(baseDate, targetZone);
-  const utcMs = baseDate.getTime() - baseOffset * 60000;
-  const targetDate = new Date(utcMs + targetOffset * 60000);
+  const { targetDate, baseOffset, targetOffset } = convertBaseToTarget(baseDate, baseZone, targetZone);
 
   convertResult.textContent = formatTime(targetDate, targetZone, state.use12Hour);
   convertDate.textContent = formatDate(targetDate, targetZone);
@@ -335,6 +382,7 @@ function convertFromBase() {
     convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
   targetTimeInput.value = toLocalInputValue(targetDate);
+  renderExtraResults(baseDate, baseZone);
   isConverting = false;
 }
 
@@ -360,6 +408,7 @@ function convertFromTarget() {
     const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
     convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
+  renderExtraResults(baseDate, baseZone);
   isConverting = false;
 }
 
@@ -502,6 +551,8 @@ baseTimeInput.addEventListener("change", convertFromBase);
 baseTimeInput.addEventListener("input", convertFromBase);
 targetTimeInput.addEventListener("change", convertFromTarget);
 targetTimeInput.addEventListener("input", convertFromTarget);
+extraZoneSearch.addEventListener("input", refreshExtraZonesList);
+extraZonesSelect.addEventListener("change", convertFromBase);
 citySearch.addEventListener("input", refreshCitySelect);
 addCityBtn.addEventListener("click", addSelectedCity);
 resetDefaultsBtn.addEventListener("click", resetDefaults);
