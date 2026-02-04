@@ -1,4 +1,4 @@
-const CACHE_NAME = "global-watch-v1";
+const CACHE_NAME = "global-watch-v2";
 const ASSETS = [
   ".",
   "index.html",
