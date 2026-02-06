@@ -7,30 +7,28 @@ const COLOR_PALETTE = [
 ];
 
 const featuredCitiesByTz = {
-  "America/Toronto": { name: "Toronto", lat: 43.6532, lon: -79.3832, color: "#56f2c8" },
-  "Africa/Khartoum": { name: "Khartoum", lat: 15.5007, lon: 32.5599, color: "#ffb703" },
+  "America/Toronto": { name: "Toronto", country: "Canada", lat: 43.6532, lon: -79.3832, color: "#56f2c8" },
   "Asia/Riyadh": { name: "Jeddah", lat: 21.4858, lon: 39.1925, color: "#8ecae6" },
-  "Africa/Cairo": { name: "Cairo", lat: 30.0444, lon: 31.2357, color: "#f28482" },
-  "Asia/Dubai": { name: "Dubai", lat: 25.2048, lon: 55.2708, color: "#9b87f5" },
-  "Asia/Kolkata": { name: "Delhi", lat: 28.6139, lon: 77.2090, color: "#80ed99" },
-  "Australia/Sydney": { name: "Sydney", lat: -33.8688, lon: 151.2093, color: "#ffd166" },
-  "Asia/Tokyo": { name: "Tokyo", lat: 35.6762, lon: 139.6503, color: "#a8dadc" },
-  "Asia/Shanghai": { name: "Beijing", lat: 39.9042, lon: 116.4074, color: "#ff8fab" },
-  "America/New_York": { name: "New York", lat: 40.7128, lon: -74.0060 },
-  "Europe/London": { name: "London", lat: 51.5074, lon: -0.1278 },
-  "Europe/Paris": { name: "Paris", lat: 48.8566, lon: 2.3522 },
-  "Europe/Berlin": { name: "Berlin", lat: 52.5200, lon: 13.4050 },
-  "Europe/Moscow": { name: "Moscow", lat: 55.7558, lon: 37.6173 },
-  "Africa/Nairobi": { name: "Nairobi", lat: -1.2921, lon: 36.8219 },
-  "Africa/Johannesburg": { name: "Cape Town", lat: -33.9249, lon: 18.4241 },
-  "America/Sao_Paulo": { name: "Sao Paulo", lat: -23.5558, lon: -46.6396 },
-  "America/Mexico_City": { name: "Mexico City", lat: 19.4326, lon: -99.1332 },
-  "America/Los_Angeles": { name: "Los Angeles", lat: 34.0522, lon: -118.2437 },
-  "America/Chicago": { name: "Chicago", lat: 41.8781, lon: -87.6298 },
-  "Asia/Singapore": { name: "Singapore", lat: 1.3521, lon: 103.8198 },
-  "Asia/Hong_Kong": { name: "Hong Kong", lat: 22.3193, lon: 114.1694 },
-  "Asia/Seoul": { name: "Seoul", lat: 37.5665, lon: 126.9780 },
-  "Asia/Bangkok": { name: "Bangkok", lat: 13.7563, lon: 100.5018 }
+  "Asia/Kolkata": { name: "Delhi", country: "India", lat: 28.6139, lon: 77.2090, color: "#80ed99" },
+  "Australia/Sydney": { name: "Sydney", country: "Australia", lat: -33.8688, lon: 151.2093, color: "#ffd166" },
+  "Asia/Tokyo": { name: "Tokyo", country: "Japan", lat: 35.6762, lon: 139.6503, color: "#a8dadc" },
+  "Asia/Shanghai": { name: "Beijing", country: "China", lat: 39.9042, lon: 116.4074, color: "#ff8fab" },
+  "Asia/Manila": { name: "Manila", country: "Philippines", lat: 14.5995, lon: 120.9842, color: "#f28482" },
+  "America/New_York": { name: "New York", country: "United States", lat: 40.7128, lon: -74.0060 },
+  "Europe/London": { name: "London", country: "United Kingdom", lat: 51.5074, lon: -0.1278 },
+  "Europe/Paris": { name: "Paris", country: "France", lat: 48.8566, lon: 2.3522 },
+  "Europe/Berlin": { name: "Berlin", country: "Germany", lat: 52.5200, lon: 13.4050 },
+  "Europe/Moscow": { name: "Moscow", country: "Russia", lat: 55.7558, lon: 37.6173 },
+  "Africa/Nairobi": { name: "Nairobi", country: "Kenya", lat: -1.2921, lon: 36.8219 },
+  "Africa/Johannesburg": { name: "Cape Town", country: "South Africa", lat: -33.9249, lon: 18.4241 },
+  "America/Sao_Paulo": { name: "Sao Paulo", country: "Brazil", lat: -23.5558, lon: -46.6396 },
+  "America/Mexico_City": { name: "Mexico City", country: "Mexico", lat: 19.4326, lon: -99.1332 },
+  "America/Los_Angeles": { name: "Los Angeles", country: "United States", lat: 34.0522, lon: -118.2437 },
+  "America/Chicago": { name: "Chicago", country: "United States", lat: 41.8781, lon: -87.6298 },
+  "Asia/Singapore": { name: "Singapore", country: "Singapore", lat: 1.3521, lon: 103.8198 },
+  "Asia/Hong_Kong": { name: "Hong Kong", country: "Hong Kong", lat: 22.3193, lon: 114.1694 },
+  "Asia/Seoul": { name: "Seoul", country: "South Korea", lat: 37.5665, lon: 126.9780 },
+  "Asia/Bangkok": { name: "Bangkok", country: "Thailand", lat: 13.7563, lon: 100.5018 }
 };
 
 function titleFromTzPart(part) {
@@ -43,6 +41,12 @@ function cityNameFromTimeZone(tz) {
   return titleFromTzPart(cityPart);
 }
 
+function countryFromTimeZone(tz) {
+  const segments = tz.split("/");
+  if (segments.length < 2) return "Unknown";
+  return titleFromTzPart(segments[0]);
+}
+
 function buildWorldCities() {
   const supported = typeof Intl.supportedValuesOf === "function"
     ? Intl.supportedValuesOf("timeZone")
@@ -51,6 +55,7 @@ function buildWorldCities() {
     const featured = featuredCitiesByTz[tz];
     return {
       name: featured?.name || cityNameFromTimeZone(tz),
+      country: featured?.country || countryFromTimeZone(tz),
       tz,
       color: featured?.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
       lat: featured?.lat,
@@ -63,14 +68,12 @@ const allCities = buildWorldCities();
 
 const DEFAULT_ACTIVE = [
   "America/Toronto",
-  "Africa/Khartoum",
   "Asia/Riyadh",
-  "Africa/Cairo",
-  "Asia/Dubai",
   "Asia/Kolkata",
   "Australia/Sydney",
   "Asia/Tokyo",
-  "Asia/Shanghai"
+  "Asia/Shanghai",
+  "Asia/Manila"
 ];
 
 function loadActiveCities() {
@@ -295,6 +298,7 @@ function buildGrid() {
         <div class="city">${city.name}</div>
         <span class="badge" data-field="daynight">---</span>
       </div>
+      <div class="zone">${city.country}</div>
       <div class="local" data-field="time">--:--:--</div>
       <div class="zone" data-field="date">---</div>
       <div class="zone" data-field="zone">---</div>
