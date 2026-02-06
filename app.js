@@ -1,30 +1,65 @@
-const allCities = [
-  { name: "Toronto", tz: "America/Toronto", color: "#56f2c8", lat: 43.6532, lon: -79.3832 },
-  { name: "Khartoum", tz: "Africa/Khartoum", color: "#ffb703", lat: 15.5007, lon: 32.5599 },
-  { name: "Jeddah", tz: "Asia/Riyadh", color: "#8ecae6", lat: 21.4858, lon: 39.1925 },
-  { name: "Cairo", tz: "Africa/Cairo", color: "#f28482", lat: 30.0444, lon: 31.2357 },
-  { name: "Dubai", tz: "Asia/Dubai", color: "#9b87f5", lat: 25.2048, lon: 55.2708 },
-  { name: "Delhi", tz: "Asia/Kolkata", color: "#80ed99", lat: 28.6139, lon: 77.2090 },
-  { name: "Sydney", tz: "Australia/Sydney", color: "#ffd166", lat: -33.8688, lon: 151.2093 },
-  { name: "Tokyo", tz: "Asia/Tokyo", color: "#a8dadc", lat: 35.6762, lon: 139.6503 },
-  { name: "Beijing", tz: "Asia/Shanghai", color: "#ff8fab", lat: 39.9042, lon: 116.4074 },
-  { name: "New York", tz: "America/New_York", color: "#cdb4db", lat: 40.7128, lon: -74.0060 },
-  { name: "London", tz: "Europe/London", color: "#bde0fe", lat: 51.5074, lon: -0.1278 },
-  { name: "Paris", tz: "Europe/Paris", color: "#ffc8dd", lat: 48.8566, lon: 2.3522 },
-  { name: "Berlin", tz: "Europe/Berlin", color: "#b5e48c", lat: 52.5200, lon: 13.4050 },
-  { name: "Moscow", tz: "Europe/Moscow", color: "#f9c74f", lat: 55.7558, lon: 37.6173 },
-  { name: "Riyadh", tz: "Asia/Riyadh", color: "#90be6d", lat: 24.7136, lon: 46.6753 },
-  { name: "Nairobi", tz: "Africa/Nairobi", color: "#f94144", lat: -1.2921, lon: 36.8219 },
-  { name: "Cape Town", tz: "Africa/Johannesburg", color: "#43aa8b", lat: -33.9249, lon: 18.4241 },
-  { name: "Sao Paulo", tz: "America/Sao_Paulo", color: "#4d908e", lat: -23.5558, lon: -46.6396 },
-  { name: "Mexico City", tz: "America/Mexico_City", color: "#f3722c", lat: 19.4326, lon: -99.1332 },
-  { name: "Los Angeles", tz: "America/Los_Angeles", color: "#577590", lat: 34.0522, lon: -118.2437 },
-  { name: "Chicago", tz: "America/Chicago", color: "#f8961e", lat: 41.8781, lon: -87.6298 },
-  { name: "Singapore", tz: "Asia/Singapore", color: "#9ef01a", lat: 1.3521, lon: 103.8198 },
-  { name: "Hong Kong", tz: "Asia/Hong_Kong", color: "#ffd60a", lat: 22.3193, lon: 114.1694 },
-  { name: "Seoul", tz: "Asia/Seoul", color: "#48bfe3", lat: 37.5665, lon: 126.9780 },
-  { name: "Bangkok", tz: "Asia/Bangkok", color: "#ffafcc", lat: 13.7563, lon: 100.5018 }
+const COLOR_PALETTE = [
+  "#56f2c8", "#ffb703", "#8ecae6", "#f28482", "#9b87f5",
+  "#80ed99", "#ffd166", "#a8dadc", "#ff8fab", "#cdb4db",
+  "#bde0fe", "#ffc8dd", "#b5e48c", "#f9c74f", "#90be6d",
+  "#f94144", "#43aa8b", "#4d908e", "#f3722c", "#577590",
+  "#f8961e", "#9ef01a", "#ffd60a", "#48bfe3", "#ffafcc"
 ];
+
+const featuredCitiesByTz = {
+  "America/Toronto": { name: "Toronto", lat: 43.6532, lon: -79.3832, color: "#56f2c8" },
+  "Africa/Khartoum": { name: "Khartoum", lat: 15.5007, lon: 32.5599, color: "#ffb703" },
+  "Asia/Riyadh": { name: "Jeddah", lat: 21.4858, lon: 39.1925, color: "#8ecae6" },
+  "Africa/Cairo": { name: "Cairo", lat: 30.0444, lon: 31.2357, color: "#f28482" },
+  "Asia/Dubai": { name: "Dubai", lat: 25.2048, lon: 55.2708, color: "#9b87f5" },
+  "Asia/Kolkata": { name: "Delhi", lat: 28.6139, lon: 77.2090, color: "#80ed99" },
+  "Australia/Sydney": { name: "Sydney", lat: -33.8688, lon: 151.2093, color: "#ffd166" },
+  "Asia/Tokyo": { name: "Tokyo", lat: 35.6762, lon: 139.6503, color: "#a8dadc" },
+  "Asia/Shanghai": { name: "Beijing", lat: 39.9042, lon: 116.4074, color: "#ff8fab" },
+  "America/New_York": { name: "New York", lat: 40.7128, lon: -74.0060 },
+  "Europe/London": { name: "London", lat: 51.5074, lon: -0.1278 },
+  "Europe/Paris": { name: "Paris", lat: 48.8566, lon: 2.3522 },
+  "Europe/Berlin": { name: "Berlin", lat: 52.5200, lon: 13.4050 },
+  "Europe/Moscow": { name: "Moscow", lat: 55.7558, lon: 37.6173 },
+  "Africa/Nairobi": { name: "Nairobi", lat: -1.2921, lon: 36.8219 },
+  "Africa/Johannesburg": { name: "Cape Town", lat: -33.9249, lon: 18.4241 },
+  "America/Sao_Paulo": { name: "Sao Paulo", lat: -23.5558, lon: -46.6396 },
+  "America/Mexico_City": { name: "Mexico City", lat: 19.4326, lon: -99.1332 },
+  "America/Los_Angeles": { name: "Los Angeles", lat: 34.0522, lon: -118.2437 },
+  "America/Chicago": { name: "Chicago", lat: 41.8781, lon: -87.6298 },
+  "Asia/Singapore": { name: "Singapore", lat: 1.3521, lon: 103.8198 },
+  "Asia/Hong_Kong": { name: "Hong Kong", lat: 22.3193, lon: 114.1694 },
+  "Asia/Seoul": { name: "Seoul", lat: 37.5665, lon: 126.9780 },
+  "Asia/Bangkok": { name: "Bangkok", lat: 13.7563, lon: 100.5018 }
+};
+
+function titleFromTzPart(part) {
+  return part.replace(/_/g, " ");
+}
+
+function cityNameFromTimeZone(tz) {
+  const segments = tz.split("/");
+  const cityPart = segments[segments.length - 1];
+  return titleFromTzPart(cityPart);
+}
+
+function buildWorldCities() {
+  const supported = typeof Intl.supportedValuesOf === "function"
+    ? Intl.supportedValuesOf("timeZone")
+    : Object.keys(featuredCitiesByTz);
+  return supported.map((tz, index) => {
+    const featured = featuredCitiesByTz[tz];
+    return {
+      name: featured?.name || cityNameFromTimeZone(tz),
+      tz,
+      color: featured?.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
+      lat: featured?.lat,
+      lon: featured?.lon
+    };
+  });
+}
+
+const allCities = buildWorldCities();
 
 const DEFAULT_ACTIVE = [
   "America/Toronto",
@@ -57,7 +92,7 @@ function saveActiveCities() {
 
 const state = {
   use12Hour: true,
-  mainCity: allCities[0],
+  mainCity: getCityByTz("America/Toronto") || allCities[0],
   activeCities: loadActiveCities()
 };
 
@@ -226,7 +261,8 @@ function getSunTimes(date, lat, lon) {
 
 function isDaylight(date, city) {
   if (city.lat === undefined || city.lon === undefined) {
-    return true;
+    const localHour = getLocalHour(date, city.tz);
+    return localHour >= 6 && localHour < 18;
   }
   const { sunriseUT, sunsetUT } = getSunTimes(date, city.lat, city.lon);
   if (sunriseUT === null || sunsetUT === null) {
@@ -317,7 +353,7 @@ function toLocalInputValue(date) {
 
 function getZoneLabel(date, timeZone) {
   const abbr = formatZone(date, timeZone);
-  return abbr ? `${abbr} — ${timeZone}` : timeZone;
+  return abbr ? `${abbr} - ${timeZone}` : timeZone;
 }
 
 function convertBaseToTarget(baseDate, baseZone, targetZone) {
@@ -344,7 +380,7 @@ function convertFromBase() {
     const targetShort = formatZone(targetDate, targetZone);
     const targetOffsetLabel = formatOffset(targetDate, targetZone).replace("GMT", "UTC");
     const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
-    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
+    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) | ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
   targetTimeInput.value = toLocalInputValue(targetDate);
   isConverting = false;
@@ -370,7 +406,7 @@ function convertFromTarget() {
     const targetShort = formatZone(targetDate, targetZone);
     const targetOffsetLabel = formatOffset(targetDate, targetZone).replace("GMT", "UTC");
     const baseLabel = baseZone === "UTC" ? "UTC" : (getCityByTz(baseZone)?.name || baseZone);
-    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) · ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
+    convertMeta.textContent = `Target: ${targetShort} (${targetOffsetLabel}) | ${offsetDiffLabelWithBase(baseOffset, targetOffset, baseLabel)}`;
   }
   isConverting = false;
 }
@@ -395,13 +431,16 @@ function refreshCitySelect() {
   const activeSet = new Set(state.activeCities);
   const filtered = allCities
     .filter((city) => !activeSet.has(city.tz))
-    .filter((city) => city.name.toLowerCase().includes(searchValue));
+    .filter((city) =>
+      city.name.toLowerCase().includes(searchValue) ||
+      city.tz.toLowerCase().includes(searchValue)
+    );
 
   citySelect.innerHTML = "";
   filtered.forEach((city) => {
     const option = document.createElement("option");
     option.value = city.tz;
-    option.textContent = city.name;
+    option.textContent = `${city.name} (${city.tz})`;
     citySelect.appendChild(option);
   });
 }
