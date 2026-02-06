@@ -8,7 +8,7 @@ const COLOR_PALETTE = [
 
 const featuredCitiesByTz = {
   "America/Toronto": { name: "Toronto", country: "Canada", lat: 43.6532, lon: -79.3832, color: "#56f2c8" },
-  "Asia/Riyadh": { name: "Jeddah", lat: 21.4858, lon: 39.1925, color: "#8ecae6" },
+  "Asia/Riyadh": { name: "Jeddah", country: "Saudi Arabia", lat: 21.4858, lon: 39.1925, color: "#8ecae6" },
   "Asia/Kolkata": { name: "Delhi", country: "India", lat: 28.6139, lon: 77.2090, color: "#80ed99" },
   "Australia/Sydney": { name: "Sydney", country: "Australia", lat: -33.8688, lon: 151.2093, color: "#ffd166" },
   "Asia/Tokyo": { name: "Tokyo", country: "Japan", lat: 35.6762, lon: 139.6503, color: "#a8dadc" },
@@ -31,6 +31,85 @@ const featuredCitiesByTz = {
   "Asia/Bangkok": { name: "Bangkok", country: "Thailand", lat: 13.7563, lon: 100.5018 }
 };
 
+const countryByTimeZone = {
+  "America/Vancouver": "Canada",
+  "America/Edmonton": "Canada",
+  "America/Winnipeg": "Canada",
+  "America/Regina": "Canada",
+  "America/Toronto": "Canada",
+  "America/Halifax": "Canada",
+  "America/St_Johns": "Canada",
+  "America/Whitehorse": "Canada",
+  "America/Dawson": "Canada",
+  "America/New_York": "United States",
+  "America/Chicago": "United States",
+  "America/Denver": "United States",
+  "America/Los_Angeles": "United States",
+  "America/Phoenix": "United States",
+  "America/Anchorage": "United States",
+  "Pacific/Honolulu": "United States",
+  "America/Mexico_City": "Mexico",
+  "America/Sao_Paulo": "Brazil",
+  "America/Buenos_Aires": "Argentina",
+  "Europe/London": "United Kingdom",
+  "Europe/Dublin": "Ireland",
+  "Europe/Paris": "France",
+  "Europe/Berlin": "Germany",
+  "Europe/Madrid": "Spain",
+  "Europe/Rome": "Italy",
+  "Europe/Amsterdam": "Netherlands",
+  "Europe/Brussels": "Belgium",
+  "Europe/Zurich": "Switzerland",
+  "Europe/Vienna": "Austria",
+  "Europe/Stockholm": "Sweden",
+  "Europe/Oslo": "Norway",
+  "Europe/Copenhagen": "Denmark",
+  "Europe/Helsinki": "Finland",
+  "Europe/Warsaw": "Poland",
+  "Europe/Athens": "Greece",
+  "Europe/Istanbul": "Turkey",
+  "Europe/Moscow": "Russia",
+  "Africa/Cairo": "Egypt",
+  "Africa/Khartoum": "Sudan",
+  "Africa/Johannesburg": "South Africa",
+  "Africa/Nairobi": "Kenya",
+  "Africa/Casablanca": "Morocco",
+  "Asia/Riyadh": "Saudi Arabia",
+  "Asia/Dubai": "United Arab Emirates",
+  "Asia/Qatar": "Qatar",
+  "Asia/Kuwait": "Kuwait",
+  "Asia/Bahrain": "Bahrain",
+  "Asia/Muscat": "Oman",
+  "Asia/Kolkata": "India",
+  "Asia/Karachi": "Pakistan",
+  "Asia/Dhaka": "Bangladesh",
+  "Asia/Kathmandu": "Nepal",
+  "Asia/Colombo": "Sri Lanka",
+  "Asia/Bangkok": "Thailand",
+  "Asia/Singapore": "Singapore",
+  "Asia/Kuala_Lumpur": "Malaysia",
+  "Asia/Jakarta": "Indonesia",
+  "Asia/Manila": "Philippines",
+  "Asia/Ho_Chi_Minh": "Vietnam",
+  "Asia/Hong_Kong": "Hong Kong",
+  "Asia/Taipei": "Taiwan",
+  "Asia/Shanghai": "China",
+  "Asia/Seoul": "South Korea",
+  "Asia/Tokyo": "Japan",
+  "Australia/Sydney": "Australia",
+  "Australia/Melbourne": "Australia",
+  "Australia/Brisbane": "Australia",
+  "Australia/Perth": "Australia",
+  "Pacific/Auckland": "New Zealand",
+  "Pacific/Fiji": "Fiji"
+};
+
+const singleCountryPrefixes = {
+  "Australia": "Australia",
+  "NZ": "New Zealand",
+  "Indian": "India"
+};
+
 function titleFromTzPart(part) {
   return part.replace(/_/g, " ");
 }
@@ -42,9 +121,12 @@ function cityNameFromTimeZone(tz) {
 }
 
 function countryFromTimeZone(tz) {
+  if (countryByTimeZone[tz]) return countryByTimeZone[tz];
   const segments = tz.split("/");
   if (segments.length < 2) return "Unknown";
-  return titleFromTzPart(segments[0]);
+  if (singleCountryPrefixes[segments[0]]) return singleCountryPrefixes[segments[0]];
+  if (segments[0] === "Etc" && segments[1] === "UTC") return "UTC";
+  return "Unknown";
 }
 
 function buildWorldCities() {
