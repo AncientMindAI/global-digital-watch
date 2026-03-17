@@ -66,6 +66,12 @@ h1 {
   color: var(--muted);
 }
 
+.clock-toggle {
+  margin-bottom: 10px;
+  font-size: 12px;
+  justify-content: flex-start;
+}
+
 .toggle-btn {
   width: 52px;
   height: 28px;
