@@ -240,6 +240,14 @@ const RSS_PROXY_BUILDERS = [
   (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
 ];
 
+const FALLBACK_INFLUENCER_MESSAGE = "Fallback mode: open live stream for latest posts.";
+const FALLBACK_NEWS = [
+  { source: "CoinDesk", title: "Monitor market-moving macro and crypto policy headlines in the live source.", link: "https://www.coindesk.com/" },
+  { source: "Cointelegraph", title: "Track intraday crypto market headlines and volatility catalysts.", link: "https://cointelegraph.com/" },
+  { source: "Decrypt", title: "Follow fast updates for token, regulation, and exchange-impact stories.", link: "https://decrypt.co/" },
+  { source: "Reuters Markets", title: "Watch macro risk events and rates headlines that can move crypto flows.", link: "https://www.reuters.com/markets/" }
+];
+
 function parseRss(xmlText) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlText, "application/xml");
@@ -283,6 +291,23 @@ async function fetchTextWithTimeout(url, timeoutMs = 12000) {
   }
 }
 
+async function fetchJsonWithTimeout(url, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function loadInfluencerCache() {
   try {
     const raw = localStorage.getItem(INFLUENCER_CACHE_KEY);
@@ -304,6 +329,17 @@ function saveInfluencerCache(cache) {
 
 async function fetchRssWithFallback(feedUrls) {
   for (const feedUrl of feedUrls) {
+    const jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
+    const jsonPayload = await fetchJsonWithTimeout(jsonUrl, 10000);
+    if (jsonPayload && jsonPayload.status === "ok" && Array.isArray(jsonPayload.items) && jsonPayload.items.length) {
+      const jsonEntries = jsonPayload.items.map((item) => ({
+        title: (item.title || "").trim() || "Untitled",
+        link: item.link || "#",
+        pubDateRaw: item.pubDate || item.pubDateRaw || "",
+        pubTs: Number.isFinite(Date.parse(item.pubDate || item.pubDateRaw || "")) ? Date.parse(item.pubDate || item.pubDateRaw || "") : 0
+      })).filter((entry) => entry.title !== "Untitled");
+      if (jsonEntries.length > 0) return jsonEntries;
+    }
     const directXml = await fetchTextWithTimeout(feedUrl);
     if (directXml) {
       const directEntries = parseRss(directXml).filter((entry) => entry.title && entry.title !== "Untitled");
@@ -401,16 +437,16 @@ function renderInfluencers(items) {
   influencerList.innerHTML = items.map((item) => {
     const profileUrl = `https://x.com/${item.handle}`;
     const liveSearchUrl = `https://x.com/search?q=(from%3A${item.handle})%20(lang%3Aen)&f=live`;
-    const title = item.latest?.title || "Latest post temporarily unavailable.";
+    const title = item.latest?.title || FALLBACK_INFLUENCER_MESSAGE;
     const time = item.latest ? relativeTime(item.latest.pubTs) : "feed unavailable";
-    const freshness = item.fromCache ? "cached" : "live";
+    const freshness = item.latest ? (item.fromCache ? "cached" : "live") : "fallback";
     const urgency = urgencyLabel(item.score, item.latest?.pubTs || 0);
     const postUrl = item.latest?.link || profileUrl;
     return `
       <div class="intel-item">
         <div class="intel-topline">
           <div class="intel-name">${item.name} (@${item.handle})</div>
-          <div class="intel-time">${time} · ${freshness} · <span class="intel-impact ${urgency.toLowerCase()}">${urgency}</span></div>
+          <div class="intel-time">${time} | ${freshness} | <span class="intel-impact ${urgency.toLowerCase()}">${urgency}</span></div>
         </div>
         <div class="intel-title">${title}</div>
         <div class="intel-links">
@@ -456,23 +492,26 @@ async function fetchNewsFeed() {
 
 function renderNewsFeed(entries) {
   if (!newsFeedEl || !newsStatusEl) return;
-  if (!entries.length) {
-    newsStatusEl.textContent = "No live headlines available right now. Check network/feed source.";
-    newsFeedEl.innerHTML = `<div class="intel-item"><div class="intel-title">No market headlines loaded.</div></div>`;
-    return;
-  }
-  const latestTime = entries[0].pubTs ? new Date(entries[0].pubTs).toLocaleTimeString() : "n/a";
-  const highImpactCount = entries.filter((entry) => entry.urgency === "High").length;
-  newsStatusEl.textContent = `Updated ${latestTime} | ${highImpactCount} high-impact | ${entries.length} ranked headlines`;
-  newsFeedEl.innerHTML = entries.map((entry) => `
+  const effectiveEntries = entries.length ? entries : FALLBACK_NEWS.map((entry) => ({
+    ...entry,
+    pubTs: 0,
+    urgency: "Normal",
+    score: 0
+  }));
+  const latestTime = effectiveEntries[0].pubTs ? new Date(effectiveEntries[0].pubTs).toLocaleTimeString() : "n/a";
+  const highImpactCount = effectiveEntries.filter((entry) => entry.urgency === "High").length;
+  newsStatusEl.textContent = entries.length
+    ? `Updated ${latestTime} | ${highImpactCount} high-impact | ${effectiveEntries.length} ranked headlines`
+    : "Live feeds temporarily unavailable | showing fallback market sources";
+  newsFeedEl.innerHTML = effectiveEntries.map((entry) => `
     <div class="intel-item">
       <div class="intel-topline">
         <div class="intel-name">${entry.source}</div>
-        <div class="intel-time">${relativeTime(entry.pubTs)} · <span class="intel-impact ${(entry.urgency || "Normal").toLowerCase()}">${entry.urgency || "Normal"}</span></div>
+        <div class="intel-time">${relativeTime(entry.pubTs)} | <span class="intel-impact ${(entry.urgency || "Normal").toLowerCase()}">${entry.urgency || "Normal"}</span></div>
       </div>
       <div class="intel-title">${entry.title}</div>
       <div class="intel-links">
-        <a class="intel-link" href="${entry.link}" target="_blank" rel="noopener">Open Story</a>
+        <a class="intel-link" href="${entry.link}" target="_blank" rel="noopener">${entries.length ? "Open Story" : "Open Source"}</a>
       </div>
     </div>
   `).join("");
