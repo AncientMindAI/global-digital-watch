@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>World Time Map Watch</title>
+  <title>Market Intel</title>
   <meta name="theme-color" content="#0b1221" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,8 +15,8 @@
   <div class="app">
     <header class="header">
       <div>
-        <div class="eyebrow">Global Digital Watch</div>
-        <h1>World Time Sync</h1>
+        <div class="eyebrow">Market Intel</div>
+        <h1>Market Intel</h1>
         <p class="sub"></p>
       </div>
       <div class="toggle">
@@ -27,6 +27,31 @@
         <span>24-hour</span>
       </div>
     </header>
+
+    <section class="intel">
+      <div class="map-header">
+        <h2>Market Intel</h2>
+        <p>Live influencer pulse and time-sensitive market news for decision support.</p>
+      </div>
+      <div class="intel-grid">
+        <article class="intel-card">
+          <div class="intel-head">
+            <h3>Influencer X Monitor</h3>
+            <button id="refreshInfluencers" class="action-btn secondary">Refresh</button>
+          </div>
+          <p class="intel-sub">Tracks high-impact market voices and links to live post streams.</p>
+          <div id="influencerList" class="intel-list"></div>
+        </article>
+        <article class="intel-card">
+          <div class="intel-head">
+            <h3>Time-Sensitive Market News</h3>
+            <button id="refreshNews" class="action-btn secondary">Refresh</button>
+          </div>
+          <p id="newsStatus" class="intel-sub">Loading top headlines...</p>
+          <div id="newsFeed" class="intel-list"></div>
+        </article>
+      </div>
+    </section>
 
     <section class="hero">
       <div class="main-clock" id="mainClock">
@@ -40,6 +65,33 @@
         <div class="date" id="utcDate">---</div>
       </div>
     </section>
+
+    <section class="grid" id="cityGrid"></section>
+    <details class="settings">
+      <summary class="settings-summary">Settings</summary>
+      <div class="settings-body">
+        <div class="map-header">
+          <h2>Manage Cities</h2>
+          <p>Add or remove cities from the live grid.</p>
+        </div>
+        <div class="manage-card">
+          <div class="field">
+            <label for="citySearch">Search City</label>
+            <input id="citySearch" type="text" placeholder="Type to filter..." />
+          </div>
+          <div class="field">
+            <label for="citySelect">Available Cities</label>
+            <select id="citySelect" size="6"></select>
+          </div>
+          <button id="addCity" class="action-btn">Add City</button>
+          <button id="resetDefaults" class="action-btn secondary">Reset to Defaults</button>
+          <div class="field">
+            <label>Active Cities</label>
+            <div id="activeCities" class="active-list"></div>
+          </div>
+        </div>
+      </div>
+    </details>
 
     <section class="converter">
       <div class="map-header">
@@ -71,58 +123,6 @@
         </div>
       </div>
     </section>
-
-    <section class="intel">
-      <div class="map-header">
-        <h2>Market Intel</h2>
-        <p>Live influencer pulse and time-sensitive market news for decision support.</p>
-      </div>
-      <div class="intel-grid">
-        <article class="intel-card">
-          <div class="intel-head">
-            <h3>Influencer X Monitor</h3>
-            <button id="refreshInfluencers" class="action-btn secondary">Refresh</button>
-          </div>
-          <p class="intel-sub">Tracks high-impact market voices and links to live post streams.</p>
-          <div id="influencerList" class="intel-list"></div>
-        </article>
-        <article class="intel-card">
-          <div class="intel-head">
-            <h3>Time-Sensitive Market News</h3>
-            <button id="refreshNews" class="action-btn secondary">Refresh</button>
-          </div>
-          <p id="newsStatus" class="intel-sub">Loading top headlines...</p>
-          <div id="newsFeed" class="intel-list"></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="grid" id="cityGrid"></section>
-    <details class="settings">
-      <summary class="settings-summary">Settings</summary>
-      <div class="settings-body">
-        <div class="map-header">
-          <h2>Manage Cities</h2>
-          <p>Add or remove cities from the live grid.</p>
-        </div>
-        <div class="manage-card">
-          <div class="field">
-            <label for="citySearch">Search City</label>
-            <input id="citySearch" type="text" placeholder="Type to filter..." />
-          </div>
-          <div class="field">
-            <label for="citySelect">Available Cities</label>
-            <select id="citySelect" size="6"></select>
-          </div>
-          <button id="addCity" class="action-btn">Add City</button>
-          <button id="resetDefaults" class="action-btn secondary">Reset to Defaults</button>
-          <div class="field">
-            <label>Active Cities</label>
-            <div id="activeCities" class="active-list"></div>
-          </div>
-        </div>
-      </div>
-    </details>
   </div>
 
   <script src="app.js?v=20260317a"></script>
