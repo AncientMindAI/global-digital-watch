@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260317a" />
 </head>
 <body>
   <div class="app">
@@ -72,6 +72,31 @@
       </div>
     </section>
 
+    <section class="intel">
+      <div class="map-header">
+        <h2>Market Intel</h2>
+        <p>Live influencer pulse and time-sensitive market news for decision support.</p>
+      </div>
+      <div class="intel-grid">
+        <article class="intel-card">
+          <div class="intel-head">
+            <h3>Influencer X Monitor</h3>
+            <button id="refreshInfluencers" class="action-btn secondary">Refresh</button>
+          </div>
+          <p class="intel-sub">Tracks high-impact market voices and links to live post streams.</p>
+          <div id="influencerList" class="intel-list"></div>
+        </article>
+        <article class="intel-card">
+          <div class="intel-head">
+            <h3>Time-Sensitive Market News</h3>
+            <button id="refreshNews" class="action-btn secondary">Refresh</button>
+          </div>
+          <p id="newsStatus" class="intel-sub">Loading top headlines...</p>
+          <div id="newsFeed" class="intel-list"></div>
+        </article>
+      </div>
+    </section>
+
     <section class="grid" id="cityGrid"></section>
     <details class="settings">
       <summary class="settings-summary">Settings</summary>
@@ -100,6 +125,6 @@
     </details>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260317a"></script>
 </body>
 </html>

@@ -138,6 +138,15 @@ h1 {
   gap: 16px;
 }
 
+.map-header h2 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.map-header p {
+  color: var(--muted);
+}
+
 .converter-card {
   background: var(--card);
   border: 1px solid var(--stroke);
@@ -148,6 +157,130 @@ h1 {
   gap: 16px;
   align-items: end;
   box-shadow: var(--shadow);
+}
+
+.intel {
+  display: grid;
+  gap: 16px;
+}
+
+.intel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.intel-card {
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: 20px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+
+.intel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.intel-head h3 {
+  font-size: 17px;
+}
+
+.intel-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.intel-list {
+  display: grid;
+  gap: 10px;
+  max-height: 380px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.intel-item {
+  border: 1px solid var(--stroke);
+  background: rgba(11, 18, 33, 0.75);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.intel-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.intel-name {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.intel-time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.intel-impact {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.intel-impact.high {
+  color: #ffd6d6;
+  background: rgba(225, 29, 72, 0.2);
+  border-color: rgba(225, 29, 72, 0.45);
+}
+
+.intel-impact.medium {
+  color: #ffe5b4;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.intel-impact.normal {
+  color: #b8e1ff;
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.42);
+}
+
+.intel-title {
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.intel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intel-link {
+  color: var(--accent-2);
+  text-decoration: none;
+  font-size: 12px;
+  border: 1px solid rgba(255, 183, 3, 0.3);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.intel-link:hover {
+  border-color: rgba(255, 183, 3, 0.6);
 }
 
 

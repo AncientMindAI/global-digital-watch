@@ -1,4 +1,4 @@
-const CACHE_NAME = "global-watch-v2";
+const CACHE_NAME = "global-watch-v3";
 const ASSETS = [
   ".",
   "index.html",
@@ -25,6 +25,20 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  const isCoreAsset = ["/", "/index.html", "/styles.css", "/app.js"].includes(url.pathname);
+  if (isCoreAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("index.html")))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

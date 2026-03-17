@@ -195,6 +195,224 @@ const citySelect = document.getElementById("citySelect");
 const addCityBtn = document.getElementById("addCity");
 const resetDefaultsBtn = document.getElementById("resetDefaults");
 const activeCitiesEl = document.getElementById("activeCities");
+const influencerList = document.getElementById("influencerList");
+const refreshInfluencersBtn = document.getElementById("refreshInfluencers");
+const newsFeedEl = document.getElementById("newsFeed");
+const newsStatusEl = document.getElementById("newsStatus");
+const refreshNewsBtn = document.getElementById("refreshNews");
+
+const INFLUENCERS = [
+  { name: "Michael Saylor", handle: "saylor" },
+  { name: "Eric Balchunas", handle: "EricBalchunas" },
+  { name: "James Seyffart", handle: "JSeyff" },
+  { name: "The Kobeissi Letter", handle: "KobeissiLetter" },
+  { name: "The Wolf Of All Streets", handle: "scottmelker" },
+  { name: "Arthur Hayes", handle: "CryptoHayes" },
+  { name: "Raoul Pal", handle: "RaoulGMI" },
+  { name: "Lyn Alden", handle: "LynAldenContact" },
+  { name: "Willy Woo", handle: "woonomic" },
+  { name: "Cathie Wood", handle: "CathieDWood" },
+  { name: "CZ", handle: "cz_binance" },
+  { name: "PlanB", handle: "100trillionUSD" }
+];
+
+const NEWS_FEEDS = [
+  { name: "Reuters Markets", url: "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best" },
+  { name: "Bloomberg Crypto", url: "https://feeds.bloomberg.com/crypto/news.rss" },
+  { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
+  { name: "Cointelegraph", url: "https://cointelegraph.com/rss" },
+  { name: "Decrypt", url: "https://decrypt.co/feed" },
+  { name: "Yahoo Crypto", url: "https://finance.yahoo.com/topic/crypto/rssindex" }
+];
+
+const IMPACT_KEYWORDS = [
+  "etf", "sec", "fomc", "fed", "interest rate", "cpi", "inflation", "tariff",
+  "liquidation", "hack", "exploit", "lawsuit", "ban", "approval", "halving",
+  "treasury", "nasdaq", "earnings", "macro", "regulation", "bitcoin", "ethereum",
+  "solana", "xrp", "doge"
+];
+
+const BREAKING_KEYWORDS = ["breaking", "just in", "urgent", "alert", "developing"];
+
+function proxiedUrl(url) {
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+
+function parseRss(xmlText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+  const items = Array.from(xml.querySelectorAll("item"));
+  return items.map((item) => {
+    const title = item.querySelector("title")?.textContent?.trim() || "Untitled";
+    const link = item.querySelector("link")?.textContent?.trim() || "#";
+    const pubDateRaw = item.querySelector("pubDate")?.textContent?.trim() || "";
+    const pubTs = Date.parse(pubDateRaw);
+    return {
+      title,
+      link,
+      pubDateRaw,
+      pubTs: Number.isFinite(pubTs) ? pubTs : 0
+    };
+  });
+}
+
+function relativeTime(ts) {
+  if (!Number.isFinite(ts) || ts <= 0) return "time n/a";
+  const diffMs = Date.now() - ts;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+function ageMinutes(ts) {
+  if (!Number.isFinite(ts) || ts <= 0) return Number.POSITIVE_INFINITY;
+  return Math.max(0, Math.floor((Date.now() - ts) / 60000));
+}
+
+function scoreTextImpact(text, ts) {
+  const lowered = (text || "").toLowerCase();
+  const keywordHits = IMPACT_KEYWORDS.reduce((hits, keyword) => (
+    lowered.includes(keyword) ? hits + 1 : hits
+  ), 0);
+  const breakingHits = BREAKING_KEYWORDS.reduce((hits, keyword) => (
+    lowered.includes(keyword) ? hits + 1 : hits
+  ), 0);
+  const ageMin = ageMinutes(ts);
+  const recencyBoost = ageMin <= 15 ? 5 : ageMin <= 60 ? 3 : ageMin <= 180 ? 1 : 0;
+  return (keywordHits * 2) + (breakingHits * 3) + recencyBoost;
+}
+
+function urgencyLabel(score, ts) {
+  const ageMin = ageMinutes(ts);
+  if (score >= 10 && ageMin <= 60) return "High";
+  if (score >= 6 && ageMin <= 180) return "Medium";
+  return "Normal";
+}
+
+async function fetchInfluencerPosts() {
+  const requests = INFLUENCERS.map(async (influencer) => {
+    const rssUrl = `https://nitter.net/${influencer.handle}/rss`;
+    try {
+      const res = await fetch(proxiedUrl(rssUrl), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const xml = await res.text();
+      const entries = parseRss(xml);
+      const latest = entries[0] || null;
+      return {
+        ...influencer,
+        latest,
+        score: scoreTextImpact(latest?.title || "", latest?.pubTs || 0)
+      };
+    } catch {
+      return {
+        ...influencer,
+        latest: null,
+        score: 0
+      };
+    }
+  });
+  const items = await Promise.all(requests);
+  items.sort((a, b) => b.score - a.score);
+  return items;
+}
+
+function renderInfluencers(items) {
+  if (!influencerList) return;
+  influencerList.innerHTML = items.map((item) => {
+    const profileUrl = `https://x.com/${item.handle}`;
+    const liveSearchUrl = `https://x.com/search?q=(from%3A${item.handle})%20(lang%3Aen)&f=live`;
+    const title = item.latest?.title || "Latest post unavailable from feed source.";
+    const time = item.latest ? relativeTime(item.latest.pubTs) : "feed unavailable";
+    const urgency = urgencyLabel(item.score, item.latest?.pubTs || 0);
+    const postUrl = item.latest?.link || profileUrl;
+    return `
+      <div class="intel-item">
+        <div class="intel-topline">
+          <div class="intel-name">${item.name} (@${item.handle})</div>
+          <div class="intel-time">${time} · <span class="intel-impact ${urgency.toLowerCase()}">${urgency}</span></div>
+        </div>
+        <div class="intel-title">${title}</div>
+        <div class="intel-links">
+          <a class="intel-link" href="${postUrl}" target="_blank" rel="noopener">Latest Post</a>
+          <a class="intel-link" href="${liveSearchUrl}" target="_blank" rel="noopener">Live Stream</a>
+          <a class="intel-link" href="${profileUrl}" target="_blank" rel="noopener">Profile</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function refreshInfluencerPanel() {
+  if (influencerList) {
+    influencerList.innerHTML = `<div class="intel-item"><div class="intel-title">Loading influencer signals...</div></div>`;
+  }
+  const posts = await fetchInfluencerPosts();
+  renderInfluencers(posts);
+}
+
+async function fetchNewsFeed() {
+  const requests = NEWS_FEEDS.map(async (feed) => {
+    try {
+      const res = await fetch(proxiedUrl(feed.url), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const xml = await res.text();
+      const entries = parseRss(xml).slice(0, 12).map((entry) => ({
+        ...entry,
+        source: feed.name,
+        score: scoreTextImpact(entry.title, entry.pubTs),
+        urgency: urgencyLabel(scoreTextImpact(entry.title, entry.pubTs), entry.pubTs)
+      }));
+      return entries;
+    } catch {
+      return [];
+    }
+  });
+  const allEntries = (await Promise.all(requests)).flat();
+  allEntries.sort((a, b) => {
+    if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+    return (b.pubTs || 0) - (a.pubTs || 0);
+  });
+  return allEntries.slice(0, 20);
+}
+
+function renderNewsFeed(entries) {
+  if (!newsFeedEl || !newsStatusEl) return;
+  if (!entries.length) {
+    newsStatusEl.textContent = "No live headlines available right now. Check network/feed source.";
+    newsFeedEl.innerHTML = `<div class="intel-item"><div class="intel-title">No market headlines loaded.</div></div>`;
+    return;
+  }
+  const latestTime = entries[0].pubTs ? new Date(entries[0].pubTs).toLocaleTimeString() : "n/a";
+  const highImpactCount = entries.filter((entry) => entry.urgency === "High").length;
+  newsStatusEl.textContent = `Updated ${latestTime} | ${highImpactCount} high-impact | ${entries.length} ranked headlines`;
+  newsFeedEl.innerHTML = entries.map((entry) => `
+    <div class="intel-item">
+      <div class="intel-topline">
+        <div class="intel-name">${entry.source}</div>
+        <div class="intel-time">${relativeTime(entry.pubTs)} · <span class="intel-impact ${(entry.urgency || "Normal").toLowerCase()}">${entry.urgency || "Normal"}</span></div>
+      </div>
+      <div class="intel-title">${entry.title}</div>
+      <div class="intel-links">
+        <a class="intel-link" href="${entry.link}" target="_blank" rel="noopener">Open Story</a>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function refreshNewsPanel() {
+  if (newsStatusEl) {
+    newsStatusEl.textContent = "Loading top market headlines...";
+  }
+  if (newsFeedEl) {
+    newsFeedEl.innerHTML = `<div class="intel-item"><div class="intel-title">Fetching feeds...</div></div>`;
+  }
+  const entries = await fetchNewsFeed();
+  renderNewsFeed(entries);
+}
 
 function getCityByTz(tz) {
   return allCities.find((city) => city.tz === tz);
@@ -648,6 +866,8 @@ activeCitiesEl.addEventListener("click", (event) => {
     removeCity(target.dataset.tz);
   }
 });
+refreshInfluencersBtn?.addEventListener("click", refreshInfluencerPanel);
+refreshNewsBtn?.addEventListener("click", refreshNewsPanel);
 
 buildGrid();
 renderActiveCities();
@@ -655,7 +875,11 @@ refreshCitySelect();
 populateConverter();
 updateClocks();
 convertFromBase();
+refreshInfluencerPanel();
+refreshNewsPanel();
 setInterval(updateClocks, 1000);
+setInterval(refreshInfluencerPanel, 300000);
+setInterval(refreshNewsPanel, 300000);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
