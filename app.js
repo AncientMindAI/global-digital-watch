@@ -266,6 +266,23 @@ function parseRss(xmlText) {
   });
 }
 
+async function fetchTextWithTimeout(url, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function loadInfluencerCache() {
   try {
     const raw = localStorage.getItem(INFLUENCER_CACHE_KEY);
@@ -287,15 +304,16 @@ function saveInfluencerCache(cache) {
 
 async function fetchRssWithFallback(feedUrls) {
   for (const feedUrl of feedUrls) {
+    const directXml = await fetchTextWithTimeout(feedUrl);
+    if (directXml) {
+      const directEntries = parseRss(directXml).filter((entry) => entry.title && entry.title !== "Untitled");
+      if (directEntries.length > 0) return directEntries;
+    }
     for (const proxyBuilder of RSS_PROXY_BUILDERS) {
-      try {
-        const res = await fetch(proxyBuilder(feedUrl), { cache: "no-store" });
-        if (!res.ok) continue;
-        const xml = await res.text();
+      const xml = await fetchTextWithTimeout(proxyBuilder(feedUrl));
+      if (xml) {
         const entries = parseRss(xml).filter((entry) => entry.title && entry.title !== "Untitled");
         if (entries.length > 0) return entries;
-      } catch {
-        // try next proxy/source
       }
     }
   }
@@ -344,6 +362,8 @@ async function fetchInfluencerPosts() {
   const updatedCache = { ...cached };
   const requests = INFLUENCERS.map(async (influencer) => {
     const feedCandidates = [
+      `https://openrss.org/rss/x.com/${influencer.handle}`,
+      `https://openrss.org/rss/twitter.com/${influencer.handle}`,
       `https://nitter.net/${influencer.handle}/rss`,
       `https://nitter.poast.org/${influencer.handle}/rss`
     ];
