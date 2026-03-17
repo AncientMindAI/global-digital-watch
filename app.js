@@ -233,27 +233,73 @@ const IMPACT_KEYWORDS = [
 ];
 
 const BREAKING_KEYWORDS = ["breaking", "just in", "urgent", "alert", "developing"];
+const INFLUENCER_CACHE_KEY = "marketIntelInfluencerCacheV1";
 
-function proxiedUrl(url) {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-}
+const RSS_PROXY_BUILDERS = [
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+];
 
 function parseRss(xmlText) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlText, "application/xml");
-  const items = Array.from(xml.querySelectorAll("item"));
-  return items.map((item) => {
-    const title = item.querySelector("title")?.textContent?.trim() || "Untitled";
-    const link = item.querySelector("link")?.textContent?.trim() || "#";
-    const pubDateRaw = item.querySelector("pubDate")?.textContent?.trim() || "";
-    const pubTs = Date.parse(pubDateRaw);
+  const rssItems = Array.from(xml.querySelectorAll("item")).map((item) => ({
+    title: item.querySelector("title")?.textContent?.trim() || "Untitled",
+    link: item.querySelector("link")?.textContent?.trim() || "#",
+    pubDateRaw: item.querySelector("pubDate")?.textContent?.trim() || ""
+  }));
+  const atomItems = Array.from(xml.querySelectorAll("entry")).map((entry) => ({
+    title: entry.querySelector("title")?.textContent?.trim() || "Untitled",
+    link: entry.querySelector("link")?.getAttribute("href") || "#",
+    pubDateRaw: entry.querySelector("published")?.textContent?.trim()
+      || entry.querySelector("updated")?.textContent?.trim()
+      || ""
+  }));
+  return [...rssItems, ...atomItems].map((item) => {
+    const pubTs = Date.parse(item.pubDateRaw);
     return {
-      title,
-      link,
-      pubDateRaw,
+      title: item.title,
+      link: item.link,
+      pubDateRaw: item.pubDateRaw,
       pubTs: Number.isFinite(pubTs) ? pubTs : 0
     };
   });
+}
+
+function loadInfluencerCache() {
+  try {
+    const raw = localStorage.getItem(INFLUENCER_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveInfluencerCache(cache) {
+  try {
+    localStorage.setItem(INFLUENCER_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // no-op
+  }
+}
+
+async function fetchRssWithFallback(feedUrls) {
+  for (const feedUrl of feedUrls) {
+    for (const proxyBuilder of RSS_PROXY_BUILDERS) {
+      try {
+        const res = await fetch(proxyBuilder(feedUrl), { cache: "no-store" });
+        if (!res.ok) continue;
+        const xml = await res.text();
+        const entries = parseRss(xml).filter((entry) => entry.title && entry.title !== "Untitled");
+        if (entries.length > 0) return entries;
+      } catch {
+        // try next proxy/source
+      }
+    }
+  }
+  return [];
 }
 
 function relativeTime(ts) {
@@ -294,28 +340,38 @@ function urgencyLabel(score, ts) {
 }
 
 async function fetchInfluencerPosts() {
+  const cached = loadInfluencerCache();
+  const updatedCache = { ...cached };
   const requests = INFLUENCERS.map(async (influencer) => {
-    const rssUrl = `https://nitter.net/${influencer.handle}/rss`;
-    try {
-      const res = await fetch(proxiedUrl(rssUrl), { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const xml = await res.text();
-      const entries = parseRss(xml);
-      const latest = entries[0] || null;
-      return {
-        ...influencer,
+    const feedCandidates = [
+      `https://nitter.net/${influencer.handle}/rss`,
+      `https://nitter.poast.org/${influencer.handle}/rss`
+    ];
+    const entries = await fetchRssWithFallback(feedCandidates);
+    let latest = entries[0] || null;
+    let fromCache = false;
+
+    if (!latest && cached[influencer.handle]?.latest) {
+      latest = cached[influencer.handle].latest;
+      fromCache = true;
+    }
+
+    if (latest && !fromCache) {
+      updatedCache[influencer.handle] = {
         latest,
-        score: scoreTextImpact(latest?.title || "", latest?.pubTs || 0)
-      };
-    } catch {
-      return {
-        ...influencer,
-        latest: null,
-        score: 0
+        updatedAt: Date.now()
       };
     }
+
+    return {
+      ...influencer,
+      latest,
+      fromCache,
+      score: scoreTextImpact(latest?.title || "", latest?.pubTs || 0)
+    };
   });
   const items = await Promise.all(requests);
+  saveInfluencerCache(updatedCache);
   items.sort((a, b) => b.score - a.score);
   return items;
 }
@@ -325,15 +381,16 @@ function renderInfluencers(items) {
   influencerList.innerHTML = items.map((item) => {
     const profileUrl = `https://x.com/${item.handle}`;
     const liveSearchUrl = `https://x.com/search?q=(from%3A${item.handle})%20(lang%3Aen)&f=live`;
-    const title = item.latest?.title || "Latest post unavailable from feed source.";
+    const title = item.latest?.title || "Latest post temporarily unavailable.";
     const time = item.latest ? relativeTime(item.latest.pubTs) : "feed unavailable";
+    const freshness = item.fromCache ? "cached" : "live";
     const urgency = urgencyLabel(item.score, item.latest?.pubTs || 0);
     const postUrl = item.latest?.link || profileUrl;
     return `
       <div class="intel-item">
         <div class="intel-topline">
           <div class="intel-name">${item.name} (@${item.handle})</div>
-          <div class="intel-time">${time} · <span class="intel-impact ${urgency.toLowerCase()}">${urgency}</span></div>
+          <div class="intel-time">${time} · ${freshness} · <span class="intel-impact ${urgency.toLowerCase()}">${urgency}</span></div>
         </div>
         <div class="intel-title">${title}</div>
         <div class="intel-links">
@@ -357,10 +414,8 @@ async function refreshInfluencerPanel() {
 async function fetchNewsFeed() {
   const requests = NEWS_FEEDS.map(async (feed) => {
     try {
-      const res = await fetch(proxiedUrl(feed.url), { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const xml = await res.text();
-      const entries = parseRss(xml).slice(0, 12).map((entry) => ({
+      const rawEntries = await fetchRssWithFallback([feed.url]);
+      const entries = rawEntries.slice(0, 12).map((entry) => ({
         ...entry,
         source: feed.name,
         score: scoreTextImpact(entry.title, entry.pubTs),
